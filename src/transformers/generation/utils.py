@@ -2585,12 +2585,12 @@ class GenerationMixin:
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
             )
-            if a == 0: # so it only prints once
-                print(type(self))  #GPT2LMHeadModel
-                print(f"{outputs.keys()}") # [logits', 'past_key_values', 'attentions]
-                print(f"{outputs['logits']}")
-                print(f"{outputs['logits'].shape}") # [1, 4, 50257]
-            a += 1
+            # if a == 0: # so it only prints once
+            #     print(type(self))  #GPT2LMHeadModel
+            #     print(f"{outputs.keys()}") # [logits', 'past_key_values', 'attentions]
+            #     print(f"{outputs['logits']}")
+            #     print(f"{outputs['logits'].shape}") # [1, 4, 50257]
+            # a += 1
 
             if synced_gpus and this_peer_finished:
                 continue  # don't waste resources running the code we don't need
@@ -2646,7 +2646,8 @@ class GenerationMixin:
             unfinished_sequences = unfinished_sequences & ~stopping_criteria(input_ids, scores)
             this_peer_finished = unfinished_sequences.max() == 0
 
-        print(f"{a=}")
+        # print(f"{a=}") # filled tokens untill max length
+
         if streamer is not None:
             streamer.end()
 
