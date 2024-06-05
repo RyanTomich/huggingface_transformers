@@ -891,6 +891,8 @@ class GPT2Model(GPT2PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
 
+        self.ittoration = 0
+
         self.embed_dim = config.hidden_size
 
         self.wte = nn.Embedding(config.vocab_size, self.embed_dim)
@@ -972,6 +974,7 @@ class GPT2Model(GPT2PreTrainedModel):
         output_type=BaseModelOutputWithPastAndCrossAttentions,
         config_class=_CONFIG_FOR_DOC,
     )
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
@@ -1008,6 +1011,7 @@ class GPT2Model(GPT2PreTrainedModel):
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
+
         device = input_ids.device if input_ids is not None else inputs_embeds.device
 
         if token_type_ids is not None:
@@ -1021,6 +1025,9 @@ class GPT2Model(GPT2PreTrainedModel):
         if position_ids is None:
             position_ids = torch.arange(past_length, input_shape[-1] + past_length, dtype=torch.long, device=device)
             position_ids = position_ids.unsqueeze(0)
+
+        # print(f'{input_ids=}') # all on first, then single token number
+        # print(f'{position_ids=}') # Vector matching each token to it's resulting location
 
         # Attention mask.
         if attention_mask is not None:
@@ -1069,6 +1076,10 @@ class GPT2Model(GPT2PreTrainedModel):
         if token_type_ids is not None:
             token_type_embeds = self.wte(token_type_ids)
             hidden_states = hidden_states + token_type_embeds
+
+        if self.ittoration == 0:
+            print(f"{hidden_states=}")
+        self.ittoration += 1
 
         hidden_states = self.drop(hidden_states)
 
@@ -1298,9 +1309,11 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
             `labels = input_ids` Indices are selected in `[-100, 0, ..., config.vocab_size]` All labels set to `-100`
             are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
         """
+        # print("THIS IS A FORWARD PASS")
+        # print(f"{input_ids=}") # entire sequence on first pass, then just the last token generated gets passed.
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        transformer_outputs = self.transformer(
+        transformer_outputs = self.transformer( # self.transformer = GPT2Model(config)
             input_ids,
             past_key_values=past_key_values,
             attention_mask=attention_mask,
@@ -1315,6 +1328,12 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
+
+        # print(f"{transformer_outputs.keys()=}") # [last_hidden_state', 'past_key_values', 'attentions]
+        # print(f"{transformer_outputs['last_hidden_state'].shape=}")    # [1, 4, 768]
+        # print(f"{len(transformer_outputs['past_key_values'])=}")       # 12
+        # print(f"{len(transformer_outputs['attentions'])=}")            # 12
+
         hidden_states = transformer_outputs[0]
 
         # Set device for model parallelism
