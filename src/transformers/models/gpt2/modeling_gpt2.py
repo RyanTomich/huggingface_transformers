@@ -217,6 +217,7 @@ class GPT2Attention(nn.Module):
             query_length, key_length = query.size(-2), key.size(-2)
             causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length]
             mask_value = torch.finfo(attn_weights.dtype).min
+
             # Need to be a tensor, otherwise we get error: `RuntimeError: expected scalar type float but found double`.
             # Need to be on the same device, otherwise `RuntimeError: ..., x and y to be on the same device`
             mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
@@ -226,17 +227,35 @@ class GPT2Attention(nn.Module):
             # Apply the attention mask
             attn_weights = attn_weights + attention_mask
 
+
+        # if GPT2Attention.incramentor == 0:
+        #     print(attention_mask)
+        #     print(attn_weights.shape)
+        #     print(attn_weights)
+        # GPT2Attention.incramentor += 1
+
+
         attn_weights = nn.functional.softmax(attn_weights, dim=-1)
+
+        # if GPT2Attention.incramentor == 0:
+        #     print(attn_weights.shape)
+        #     print(attn_weights)
+        # GPT2Attention.incramentor += 1
 
         # Downcast (if necessary) back to V's dtype (if in mixed-precision) -- No-Op otherwise
         attn_weights = attn_weights.type(value.dtype)
         attn_weights = self.attn_dropout(attn_weights)
 
         # Mask heads if we want to
-        if head_mask is not None:
+        if head_mask is not None: # False
             attn_weights = attn_weights * head_mask
 
         attn_output = torch.matmul(attn_weights, value)
+
+        # if GPT2Attention.incramentor == 0:
+        #     print(attn_output.shape)
+        #     print(attn_output)
+        # GPT2Attention.incramentor += 1
 
         return attn_output, attn_weights
 
@@ -366,9 +385,21 @@ class GPT2Attention(nn.Module):
         else:
             attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
 
+
         attn_output = self._merge_heads(attn_output, self.num_heads, self.head_dim)
+        # if GPT2Attention.incramentor == 0:
+        #     print(attn_output.shape)
+        #     print(attn_output)
+        # GPT2Attention.incramentor += 1
+
         attn_output = self.c_proj(attn_output)
         attn_output = self.resid_dropout(attn_output)
+
+        # if GPT2Attention.incramentor == 0:
+        #     print(attn_output.shape)
+        #     print(attn_output)
+        # GPT2Attention.incramentor += 1
+
 
         outputs = (attn_output, present)
         if output_attentions:
@@ -656,6 +687,14 @@ class GPT2Block(nn.Module):
         # residual connection
         hidden_states = attn_output + residual
 
+        # if GPT2Block.call == 0: # attention validation
+        #     # print(residual.shape)
+        #     # print(residual)
+        #     print(hidden_states.shape)
+        #     print(hidden_states)
+        #     GPT2Block.call += 1
+
+
         if encoder_hidden_states is not None: #encoder_hidden_states is None
             # add one self-attention block for cross-attention
             if not hasattr(self, "crossattention"):
@@ -681,8 +720,13 @@ class GPT2Block(nn.Module):
         residual = hidden_states
         hidden_states = self.ln_2(hidden_states)
         feed_forward_hidden_states = self.mlp(hidden_states)
+
         # residual connection
         hidden_states = residual + feed_forward_hidden_states
+        # if GPT2Block.call == 0: # attention validation
+        #     print(hidden_states.shape)
+        #     print(hidden_states)
+        #     GPT2Block.call += 1
 
         if use_cache:
             outputs = (hidden_states,) + outputs
@@ -1194,6 +1238,11 @@ class GPT2Model(GPT2PreTrainedModel):
                 for k, v in self.device_map.items():
                     if i == v[-1] and "cuda:" + str(k) != self.last_device:
                         hidden_states = hidden_states.to("cuda:" + str(k + 1))
+
+        # if self.ittoration < 1:
+        #     print(f"{hidden_states.size=}")
+        #     print(f"{hidden_states}")
+        # self.ittoration += 1
 
         hidden_states = self.ln_f(hidden_states)
 
