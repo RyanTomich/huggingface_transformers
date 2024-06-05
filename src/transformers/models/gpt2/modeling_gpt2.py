@@ -1173,6 +1173,7 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
 
     def __init__(self, config):
+        print("loaded the forked huggingface_transformers package!")
         super().__init__(config)
         self.transformer = GPT2Model(config)
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
