@@ -1850,7 +1850,7 @@ class GenerationMixin:
                 streamer=streamer,
                 **model_kwargs,
             )
-
+#
         elif generation_mode in (GenerationMode.SAMPLE, GenerationMode.GREEDY_SEARCH):
             # 11. prepare logits warper
             prepared_logits_warper = (
@@ -2588,8 +2588,8 @@ class GenerationMixin:
             # if a == 0: # so it only prints once
             #     print(type(self))  #GPT2LMHeadModel
             #     print(f"{outputs.keys()}") # [logits', 'past_key_values', 'attentions]
-            #     print(f"{outputs['logits']}")
             #     print(f"{outputs['logits'].shape}") # [1, 4, 50257]
+            #     print(f"{outputs['logits']}")
             # a += 1
 
             if synced_gpus and this_peer_finished:

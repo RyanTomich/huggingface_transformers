@@ -1246,17 +1246,27 @@ class GPT2Model(GPT2PreTrainedModel):
 
         hidden_states = self.ln_f(hidden_states)
 
+        # if self.ittoration < 1:
+        #     print(f"{hidden_states.size=}")
+        #     print(f"{hidden_states}")
+        # self.ittoration += 1
+
+
         hidden_states = hidden_states.view(output_shape)
         # Add last hidden state
         if output_hidden_states:
             all_hidden_states = all_hidden_states + (hidden_states,)
 
-        if not return_dict:
+        if not return_dict: # return_dict = True
             return tuple(
                 v
                 for v in [hidden_states, presents, all_hidden_states, all_self_attentions, all_cross_attentions]
                 if v is not None
             )
+
+        # print('after GPT2 forward')
+        # print(hidden_states.shape)
+        # print(hidden_states)
 
         return BaseModelOutputWithPastAndCrossAttentions(
             last_hidden_state=hidden_states,
@@ -1407,7 +1417,7 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
         # print(f"{input_ids=}") # entire sequence on first pass, then just the last token generated gets passed.
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        transformer_outputs = self.transformer( # self.transformer = GPT2Model(config)
+        transformer_outputs = self.transformer( # self.transformer = GPT2Model(config) -> forward
             input_ids,
             past_key_values=past_key_values,
             attention_mask=attention_mask,
@@ -1427,18 +1437,23 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
         # print(f"{transformer_outputs['last_hidden_state'].shape=}")    # [1, 4, 768]
         # print(f"{len(transformer_outputs['past_key_values'])=}")       # 12
         # print(f"{len(transformer_outputs['attentions'])=}")            # 12
+        # print(transformer_outputs['last_hidden_state'].shape)
+        # print(transformer_outputs['last_hidden_state'])
 
         hidden_states = transformer_outputs[0]
 
         # Set device for model parallelism
-        if self.model_parallel:
+        if self.model_parallel: #False
             torch.cuda.set_device(self.transformer.first_device)
             hidden_states = hidden_states.to(self.lm_head.weight.device)
 
+        # MATCHES BEFORE THE lm_head
         lm_logits = self.lm_head(hidden_states)
+        # print(lm_logits.shape)
+        # print(lm_logits)
 
         loss = None
-        if labels is not None:
+        if labels is not None: #labels = None
             # move labels to correct device to enable model parallelism
             labels = labels.to(lm_logits.device)
             # Shift so that tokens < n predict n
@@ -1448,7 +1463,7 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
 
-        if not return_dict:
+        if not return_dict: #return_dict = True
             output = (lm_logits,) + transformer_outputs[1:]
             return ((loss,) + output) if loss is not None else output
 
