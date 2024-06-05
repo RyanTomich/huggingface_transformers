@@ -198,16 +198,21 @@ class GPT2Attention(nn.Module):
     def _attn(self, query, key, value, attention_mask=None, head_mask=None):
         attn_weights = torch.matmul(query, key.transpose(-1, -2))
 
-        if self.scale_attn_weights:
+        if self.scale_attn_weights: #True
             attn_weights = attn_weights / torch.full(
                 [], value.size(-1) ** 0.5, dtype=attn_weights.dtype, device=attn_weights.device
             )
 
+        # if GPT2Attention.incramentor == 0:
+        #     print(attn_weights.shape)
+        #     print(attn_weights)
+        # GPT2Attention.incramentor += 1
+
         # Layer-wise attention scaling
-        if self.scale_attn_by_inverse_layer_idx:
+        if self.scale_attn_by_inverse_layer_idx: #False
             attn_weights = attn_weights / float(self.layer_idx + 1)
 
-        if not self.is_cross_attention:
+        if not self.is_cross_attention: #True
             # if only "normal" attention layer implements causal mask
             query_length, key_length = query.size(-2), key.size(-2)
             causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length]
@@ -217,7 +222,7 @@ class GPT2Attention(nn.Module):
             mask_value = torch.full([], mask_value, dtype=attn_weights.dtype, device=attn_weights.device)
             attn_weights = torch.where(causal_mask, attn_weights.to(attn_weights.dtype), mask_value)
 
-        if attention_mask is not None:
+        if attention_mask is not None: #True
             # Apply the attention mask
             attn_weights = attn_weights + attention_mask
 
@@ -327,21 +332,23 @@ class GPT2Attention(nn.Module):
             attention_mask = encoder_attention_mask
         else:
             a = self.c_attn(hidden_states)
-            # if GPT2Attention.incramentor == 0:
-                # print(a.shape)
-                # print(a)
-            #     GPT2Attention.incramentor += 1
+
             query, key, value = a.split(self.split_size, dim=2)
+
+            # if GPT2Attention.incramentor == 0:
+            #     print('query')
+            #     print(key.shape)
+            #     print(key)
+            #     GPT2Attention.incramentor += 1
 
         query = self._split_heads(query, self.num_heads, self.head_dim)
         key = self._split_heads(key, self.num_heads, self.head_dim)
         value = self._split_heads(value, self.num_heads, self.head_dim)
 
-        # To validate query vector
+        # # To validate query vector
         # if GPT2Attention.incramentor == 0:
-        #     print(query.shape)
-        #     print(query[0][0].shape)
-        #     print(query[0][0])
+        #     print(value.shape)
+        #     print(value)
         # GPT2Attention.incramentor += 1
 
         if layer_past is not None: # false on first pass
@@ -354,7 +361,7 @@ class GPT2Attention(nn.Module):
         else:
             present = None
 
-        if self.reorder_and_upcast_attn:
+        if self.reorder_and_upcast_attn: # False
             attn_output, attn_weights = self._upcast_and_reordered_attn(query, key, value, attention_mask, head_mask)
         else:
             attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
@@ -629,12 +636,7 @@ class GPT2Block(nn.Module):
 
         residual = hidden_states
         hidden_states = self.ln_1(hidden_states)
-
-        if GPT2Block.call == 0:
-            print(hidden_states.shape)
-            print(hidden_states)
-            GPT2Block.call += 1
-
+        # ln_1 MATCHES
 
         attn_outputs = self.attn(
             hidden_states,
@@ -644,6 +646,11 @@ class GPT2Block(nn.Module):
             use_cache=use_cache,
             output_attentions=output_attentions,
         )
+        # if GPT2Block.call == 0: # attention validation
+        #     print(len(attn_outputs))
+        #     print(attn_outputs)
+        #     GPT2Block.call += 1
+
         attn_output = attn_outputs[0]  # output_attn: a, present, (attentions)
         outputs = attn_outputs[1:]
         # residual connection

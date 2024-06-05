@@ -101,13 +101,13 @@ class Conv1D(nn.Module):
         nn.init.normal_(self.weight, std=0.02)
 
     def forward(self, x):
-        if Conv1D.a == 0:
-            Conv1D.a += 1
-            # print(x.shape)
-            # print(x)
         size_out = x.size()[:-1] + (self.nf,)
         x = torch.addmm(self.bias, x.view(-1, x.size(-1)), self.weight)
         x = x.view(size_out)
+        # if Conv1D.a == 0:
+        #     Conv1D.a += 1
+        #     print(x.shape)
+        #     print(x)
         return x
 
 
