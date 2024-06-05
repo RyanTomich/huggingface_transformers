@@ -2573,6 +2573,7 @@ class GenerationMixin:
         unfinished_sequences = torch.ones(batch_size, dtype=torch.long, device=input_ids.device)
         model_kwargs = self._get_initial_cache_position(input_ids, model_kwargs)
 
+        a = 0
         while self._has_unfinished_sequences(this_peer_finished, synced_gpus, device=input_ids.device):
             # prepare model inputs
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
@@ -2584,6 +2585,12 @@ class GenerationMixin:
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
             )
+            if a == 0:
+                print(type(self))
+                print(f"{outputs.keys()}")
+                print(f"{outputs['logits']}")
+                print(f"{outputs['logits'].shape}")
+            a += 1
 
             if synced_gpus and this_peer_finished:
                 continue  # don't waste resources running the code we don't need
