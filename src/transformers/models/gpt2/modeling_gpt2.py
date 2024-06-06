@@ -1448,9 +1448,11 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
             hidden_states = hidden_states.to(self.lm_head.weight.device)
 
         # MATCHES BEFORE THE lm_head
+
         lm_logits = self.lm_head(hidden_states)
-        # print(lm_logits.shape)
         # print(lm_logits)
+        # print(lm_logits.shape)
+        # lm logits MATCH
 
         loss = None
         if labels is not None: #labels = None

@@ -2586,24 +2586,30 @@ class GenerationMixin:
                 output_hidden_states=output_hidden_states,
             )
             # if a == 0: # so it only prints once
-            #     print(type(self))  #GPT2LMHeadModel
-            #     print(f"{outputs.keys()}") # [logits', 'past_key_values', 'attentions]
-            #     print(f"{outputs['logits'].shape}") # [1, 4, 50257]
-            #     print(f"{outputs['logits']}")
+                # print(type(self))  #GPT2LMHeadModel
+                # print(f"{outputs.keys()}") # [logits', 'past_key_values', 'attentions]
+                # print(f"{outputs['logits'].shape}") # [1, 4, 50257]
+                # print(f"{outputs['logits']}")
             # a += 1
 
             if synced_gpus and this_peer_finished:
                 continue  # don't waste resources running the code we don't need
 
             next_token_logits = outputs.logits[:, -1, :]
+            # print(next_token_logits.shape)
+            # print(next_token_logits)
+
 
             # pre-process distribution
             next_token_scores = logits_processor(input_ids, next_token_logits)
-            if do_sample:
+            # print(next_token_scores.shape)
+            # print(next_token_scores)
+
+            if do_sample: # False
                 next_token_scores = logits_warper(input_ids, next_token_scores)
 
             # Store scores, attentions and hidden_states when required
-            if return_dict_in_generate:
+            if return_dict_in_generate:#False
                 if output_scores:
                     scores += (next_token_scores,)
                 if output_logits:
@@ -2623,11 +2629,12 @@ class GenerationMixin:
                     )
 
             # token selection
-            if do_sample:
+            if do_sample: # False
                 probs = nn.functional.softmax(next_token_scores, dim=-1)
                 next_tokens = torch.multinomial(probs, num_samples=1).squeeze(1)
             else:
                 next_tokens = torch.argmax(next_token_scores, dim=-1)
+                print(next_tokens)
 
             # finished sentences should have their next token be a padding token
             if has_eos_stopping_criteria:
